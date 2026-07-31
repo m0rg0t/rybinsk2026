@@ -12,6 +12,18 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
         runtimeCaching: [
           {
+            // Афиши тяжёлые (~12 МБ) — кешируем после первого просмотра, а не при установке
+            urlPattern: /\/afisha\/.*\.jpg$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'afisha-images',
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 90, // 90 дней
+              },
+            },
+          },
+          {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\//,
             handler: 'StaleWhileRevalidate',
             options: {
