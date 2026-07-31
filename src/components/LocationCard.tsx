@@ -1,6 +1,3 @@
-import { MapPin, Calendar } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { EventCard } from './EventCard';
 import { Location, EventWithStatus } from '@/types';
 
@@ -11,40 +8,32 @@ interface LocationCardProps {
 
 export function LocationCard({ location, events }: LocationCardProps) {
   const currentEvents = events.filter(e => e.status === 'current').length;
-  const futureEvents = events.filter(e => e.status === 'future').length;
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-primary" />
-            {location.name}
-          </CardTitle>
-          <div className="flex gap-2">
-            {currentEvents > 0 && (
-              <Badge variant="destructive">{currentEvents} сейчас</Badge>
-            )}
-            {futureEvents > 0 && (
-              <Badge variant="outline">{futureEvents} скоро</Badge>
-            )}
-          </div>
+    <section aria-label={location.name}>
+      <header className="mb-4 flex items-baseline justify-between gap-3 rule-hairline pt-3">
+        {/* Красные капители площадок — как на официальной афише */}
+        <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-kinovar">
+          {location.name}
+        </h2>
+        <span className="shrink-0 font-mono text-xs text-ink-muted">
+          {currentEvents > 0 ? (
+            <span className="font-bold text-kinovar">{currentEvents} сейчас</span>
+          ) : (
+            `${events.length} соб.`
+          )}
+        </span>
+      </header>
+
+      {events.length === 0 ? (
+        <p className="pb-6 text-sm text-ink-muted">Мероприятий не найдено</p>
+      ) : (
+        <div>
+          {events.map(event => (
+            <EventCard key={event.id} event={event} />
+          ))}
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {events.length === 0 ? (
-          <p className="text-sm text-muted-foreground flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Мероприятий не найдено
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {events.map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </section>
   );
 }

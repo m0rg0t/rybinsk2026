@@ -1,6 +1,3 @@
-import { Clock, MapPin } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { EventWithStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { getCategoryLabel } from '@/utils/categories';
@@ -10,72 +7,74 @@ interface EventCardProps {
   locationName?: string;
 }
 
-const categoryColors = {
-  festival: 'bg-purple-100 text-purple-800',
-  concert: 'bg-blue-100 text-blue-800',
-  theater: 'bg-green-100 text-green-800',
-  circus: 'bg-red-100 text-red-800',
-  food: 'bg-orange-100 text-orange-800',
-  exhibition: 'bg-indigo-100 text-indigo-800',
-  sports: 'bg-emerald-100 text-emerald-800',
-  children: 'bg-pink-100 text-pink-800',
-  show: 'bg-yellow-100 text-yellow-800',
-  gala: 'bg-violet-100 text-violet-800',
-  fireworks: 'bg-rose-100 text-rose-800',
-  default: 'bg-gray-100 text-gray-800'
-};
-
-const statusColors = {
-  current: 'border-l-4 border-l-green-500 bg-green-50',
-  future: 'border-l-4 border-l-blue-500 bg-blue-50',
-  past: 'border-l-4 border-l-gray-300 bg-gray-50 opacity-60'
-};
+// "12:00-13:00" → ["12:00", "13:00"]; "14:00, 16:00" → ["14:00", "16:00", ...]
+function timeParts(time: string): { main: string; rest: string[] } {
+  if (time.includes(',')) {
+    const sessions = time.split(',').map(s => s.trim());
+    return { main: sessions[0], rest: sessions.slice(1) };
+  }
+  if (time.includes('-')) {
+    const [start, end] = time.split('-').map(s => s.trim());
+    return { main: start, rest: [`–${end}`] };
+  }
+  return { main: time, rest: [] };
+}
 
 export function EventCard({ event, locationName }: EventCardProps) {
-  const categoryColor = categoryColors[event.category as keyof typeof categoryColors] || categoryColors.default;
-  const statusColor = statusColors[event.status];
+  const { main, rest } = timeParts(event.time);
+  const isCurrent = event.status === 'current';
+  const isPast = event.status === 'past';
 
   return (
-    <Card className={cn('transition-all hover:shadow-md', statusColor)}>
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-lg leading-tight">{event.title}</CardTitle>
-          {event.status === 'current' && (
-            <Badge variant="destructive" className="shrink-0">
-              СЕЙЧАС
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {event.description}
-        </p>
-        
-        <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Clock className="h-4 w-4" />
-            <span>{event.time}</span>
+    <article
+      className={cn(
+        'grid grid-cols-[3.75rem_1.25rem_1fr] transition-opacity',
+        isPast && 'opacity-50'
+      )}
+    >
+      {/* Колонка времени — как в железнодорожном расписании */}
+      <div className="pt-0.5 text-right font-mono text-sm leading-tight text-ink">
+        <div className={cn(isCurrent && 'font-bold text-kinovar')}>{main}</div>
+        {rest.map(part => (
+          <div key={part} className="text-xs text-ink-muted">
+            {part}
           </div>
-          {locationName && (
-            <div className="flex items-center gap-1">
-              <MapPin className="h-4 w-4" />
-              <span>{locationName}</span>
-            </div>
+        ))}
+      </div>
+
+      {/* Рельс с узлом */}
+      <div className="relative" aria-hidden="true">
+        <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-gold-soft" />
+        <span
+          className={cn(
+            'absolute left-1/2 top-1.5 h-2.5 w-2.5 -translate-x-1/2 rounded-full border',
+            isCurrent
+              ? 'live-dot border-kinovar bg-kinovar'
+              : isPast
+                ? 'border-gold-soft bg-paper'
+                : 'border-gold bg-paper'
           )}
-        </div>
-        
-        <div className="flex gap-2">
-          <Badge variant="outline" className={cn('text-xs', categoryColor)}>
-            {getCategoryLabel(event.category)}
-          </Badge>
-          {event.status === 'future' && (
-            <Badge variant="outline" className="text-xs">
-              Скоро
-            </Badge>
+        />
+      </div>
+
+      {/* Содержание */}
+      <div className="pb-6">
+        <h3 className="text-base font-bold leading-snug text-ink">
+          {event.title}
+          {isCurrent && (
+            <span className="ml-2 inline-block align-middle bg-kinovar px-1.5 py-0.5 font-mono text-[0.625rem] uppercase tracking-widest text-paper">
+              Сейчас
+            </span>
           )}
-        </div>
-      </CardContent>
-    </Card>
+        </h3>
+        {event.description && (
+          <p className="mt-1 text-sm leading-relaxed text-ink-muted">{event.description}</p>
+        )}
+        <p className="mt-1.5 font-mono text-[0.6875rem] uppercase tracking-wider text-gold">
+          {getCategoryLabel(event.category)}
+          {locationName && <span className="text-ink-muted"> · {locationName}</span>}
+        </p>
+      </div>
+    </article>
   );
 }

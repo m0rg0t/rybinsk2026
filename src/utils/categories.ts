@@ -28,7 +28,8 @@ export const categoryTranslations: Record<string, string> = {
   fashion: 'Модный показ',
   entertainment: 'Развлечения',
   event: 'Мероприятие',
-  market: 'Ярмарка'
+  market: 'Ярмарка',
+  excursion: 'Экскурсия'
 };
 
 export function getCategoryLabel(category: string): string {

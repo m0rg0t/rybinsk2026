@@ -1,47 +1,66 @@
-import { format, parse, isBefore, isWithinInterval } from 'date-fns';
+import { format, parse, isValid, isBefore, isWithinInterval } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Event, EventWithStatus, EventStatus } from '@/types';
 
-export function parseEventTime(timeString: string, eventDate: string): { start: Date; end: Date } {
-  const baseDate = new Date(eventDate);
-  
-  if (timeString.includes('-')) {
-    const [startTime, endTime] = timeString.split('-');
-    const start = parseTime(startTime.trim(), baseDate);
-    const end = parseTime(endTime.trim(), baseDate);
-    return { start, end };
-  } else {
-    const start = parseTime(timeString.trim(), baseDate);
-    const end = new Date(start.getTime() + 30 * 60 * 1000);
-    return { start, end };
-  }
+const SESSION_DURATION_MS = 45 * 60 * 1000;
+
+export interface EventInterval {
+  start: Date;
+  end: Date;
 }
 
 function parseTime(timeString: string, baseDate: Date): Date {
-  try {
-    const time = parse(timeString, 'HH:mm', baseDate);
-    return time;
-  } catch {
-    return baseDate;
+  const normalized = timeString.trim().replace('.', ':');
+  const time = parse(normalized, 'HH:mm', baseDate);
+  return isValid(time) ? time : baseDate;
+}
+
+// Supports "12:00-13:00" ranges and "11:00, 15:00, 18:00" session lists
+export function parseEventIntervals(timeString: string, eventDate: string): EventInterval[] {
+  const baseDate = new Date(eventDate);
+
+  if (timeString.includes(',')) {
+    return timeString.split(',').map(session => {
+      const start = parseTime(session, baseDate);
+      return { start, end: new Date(start.getTime() + SESSION_DURATION_MS) };
+    });
   }
+
+  if (timeString.includes('-')) {
+    const [startTime, endTime] = timeString.split('-');
+    return [{ start: parseTime(startTime, baseDate), end: parseTime(endTime, baseDate) }];
+  }
+
+  const start = parseTime(timeString, baseDate);
+  return [{ start, end: new Date(start.getTime() + SESSION_DURATION_MS) }];
+}
+
+export function parseEventTime(timeString: string, eventDate: string): EventInterval {
+  const intervals = parseEventIntervals(timeString, eventDate);
+  return {
+    start: intervals[0].start,
+    end: intervals[intervals.length - 1].end,
+  };
 }
 
 export function getEventStatus(event: Event, currentTime: Date, eventDate: string): EventStatus {
-  const { start, end } = parseEventTime(event.time, eventDate);
-  
-  if (isBefore(currentTime, start)) {
-    return 'future';
-  } else if (isWithinInterval(currentTime, { start, end })) {
+  const intervals = parseEventIntervals(event.time, eventDate);
+
+  if (intervals.some(interval => isWithinInterval(currentTime, interval))) {
     return 'current';
-  } else {
-    return 'past';
   }
+  if (isBefore(currentTime, intervals[0].start)) {
+    return 'future';
+  }
+  // Between sessions of a multi-session event, the next one is still ahead
+  const nextSession = intervals.find(interval => isBefore(currentTime, interval.start));
+  return nextSession ? 'future' : 'past';
 }
 
 export function addStatusToEvent(event: Event, currentTime: Date, eventDate: string): EventWithStatus {
   const { start, end } = parseEventTime(event.time, eventDate);
   const status = getEventStatus(event, currentTime, eventDate);
-  
+
   return {
     ...event,
     status,

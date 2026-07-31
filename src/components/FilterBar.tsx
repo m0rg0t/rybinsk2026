@@ -1,8 +1,6 @@
-import { Search, Filter, Clock, MapPin } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Search } from "lucide-react";
 import { FilterType } from "@/types";
+import { cn } from "@/lib/utils";
 
 interface FilterBarProps {
   searchQuery: string;
@@ -14,6 +12,15 @@ interface FilterBarProps {
   locations: Array<{ id: string; name: string; count: number }>;
   currentEventsCount: number;
   futureEventsCount: number;
+}
+
+function chipClass(active: boolean): string {
+  return cn(
+    "px-3 py-1.5 font-mono text-xs transition-colors border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold",
+    active
+      ? "border-ink bg-ink text-paper"
+      : "border-gold-soft bg-transparent text-ink hover:bg-paper-deep"
+  );
 }
 
 export function FilterBar({
@@ -28,96 +35,50 @@ export function FilterBar({
   futureEventsCount,
 }: FilterBarProps) {
   return (
-    <div className="space-y-4 p-4 bg-white rounded-lg shadow-sm border">
-      {/* Search */}
+    <div className="space-y-4 border border-gold-soft bg-paper-card p-4">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Поиск мероприятий..."
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+        <input
+          type="search"
+          placeholder="Поиск по программе…"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-10"
+          className="w-full border border-gold-soft bg-paper py-2 pl-10 pr-3 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus-visible:border-gold focus-visible:ring-1 focus-visible:ring-gold"
         />
       </div>
 
-      {/* Status Filters */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <Clock className="h-4 w-4" />
-          Время проведения
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant={statusFilter === "all" ? "default" : "outline"}
-            size="sm"
-            onClick={() => onStatusFilterChange("all")}
-            className="flex items-center gap-1"
-          >
-            <Filter className="h-3 w-3" />
-            Все мероприятия
-          </Button>
-          <Button
-            variant={statusFilter === "current" ? "default" : "outline"}
-            size="sm"
-            onClick={() => onStatusFilterChange("current")}
-            className="flex items-center gap-1"
-          >
-            <div className="w-2 h-2 bg-green-500 rounded-full" />
-            Сейчас
-            {currentEventsCount > 0 && (
-              <Badge variant="secondary" className="ml-1 text-xs">
-                {currentEventsCount}
-              </Badge>
-            )}
-          </Button>
-          <Button
-            variant={statusFilter === "future" ? "default" : "outline"}
-            size="sm"
-            onClick={() => onStatusFilterChange("future")}
-            className="flex items-center gap-1"
-          >
-            <div className="w-2 h-2 bg-blue-500 rounded-full" />
-            Скоро
-            {futureEventsCount > 0 && (
-              <Badge variant="secondary" className="ml-1 text-xs">
-                {futureEventsCount}
-              </Badge>
-            )}
-          </Button>
-        </div>
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Фильтр по времени">
+        <button className={chipClass(statusFilter === "all")} onClick={() => onStatusFilterChange("all")}>
+          Вся программа
+        </button>
+        <button className={chipClass(statusFilter === "current")} onClick={() => onStatusFilterChange("current")}>
+          <span className={cn("mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle", statusFilter === "current" ? "bg-paper" : "bg-kinovar")} />
+          Сейчас{currentEventsCount > 0 && ` · ${currentEventsCount}`}
+        </button>
+        <button className={chipClass(statusFilter === "future")} onClick={() => onStatusFilterChange("future")}>
+          <span className={cn("mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle", statusFilter === "future" ? "bg-paper" : "bg-river")} />
+          Скоро{futureEventsCount > 0 && ` · ${futureEventsCount}`}
+        </button>
       </div>
 
-      {/* Location Filters */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <MapPin className="h-4 w-4" />
-          Локации
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant={selectedLocation === "all" ? "default" : "outline"}
-            size="sm"
-            onClick={() => onLocationChange("all")}
-          >
-            Все локации
-          </Button>
+      <div className="rule-hairline pt-3">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Фильтр по площадкам">
+          <button className={chipClass(selectedLocation === "all")} onClick={() => onLocationChange("all")}>
+            Все площадки
+          </button>
           {locations.map((location) => (
-            <Button
+            <button
               key={location.id}
-              variant={selectedLocation === location.id ? "default" : "outline"}
-              size="sm"
+              className={chipClass(selectedLocation === location.id)}
               onClick={() => onLocationChange(location.id)}
-              className="flex flex-row items-center justify-center gap-0 h-auto py-2 px-2 text-center leading-tight"
             >
-              <span className="text-xs font-medium break-words">
-                {location.name}
-              </span>
+              {location.name}
               {location.count > 0 && (
-                <Badge variant="secondary" className="text-xs mt-0.5 h-4 px-1">
+                <span className={cn("ml-1.5", selectedLocation === location.id ? "text-gold-soft" : "text-ink-muted")}>
                   {location.count}
-                </Badge>
+                </span>
               )}
-            </Button>
+            </button>
           ))}
         </div>
       </div>

@@ -1,87 +1,101 @@
 import { useState } from 'react';
-import { Calendar, MapPin, Clock, Images } from 'lucide-react';
 import { EventList } from '@/components/EventList';
-import { AfinaPage } from '@/components/AfinaPage';
+import { AfishaPage } from '@/components/AfishaPage';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import eventData from '@/data/events.json';
-import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import eventData2026 from '@/data/events.json';
+import eventData2025 from '@/data/events2025.json';
+import { EventData } from '@/types';
+
+type View = 'events' | 'archive' | 'afisha';
+
+function countEvents(data: EventData): number {
+  return data.locations.reduce((total, location) => total + location.events.length, 0);
+}
 
 function App() {
-  const [currentView, setCurrentView] = useState<'events' | 'afina'>('events');
-  const eventDate = new Date(eventData.date);
-  const formattedDate = format(eventDate, 'd MMMM yyyy', { locale: ru });
+  const [currentView, setCurrentView] = useState<View>('events');
 
-  if (currentView === 'afina') {
-    return <AfinaPage onBack={() => setCurrentView('events')} />;
+  if (currentView === 'afisha') {
+    return <AfishaPage onBack={() => setCurrentView('events')} />;
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <OfflineIndicator />
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col items-center text-center space-y-4">
-            <div className="flex items-center justify-between w-full max-w-6xl">
-              <div></div>
-              <div className="flex items-center gap-3">
-                <Calendar className="h-8 w-8 text-primary" />
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-                  {eventData.title}
-                </h1>
-              </div>
-              <Button 
-                variant="outline"
-                onClick={() => setCurrentView('afina')}
-                className="flex items-center gap-2"
-              >
-                <Images className="h-4 w-4" />
-                Афиши
-              </Button>
-            </div>
-            
-            <div className="flex flex-wrap items-center justify-center gap-4 text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span className="text-lg font-medium">{formattedDate}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                <span>г. Рыбинск</span>
-              </div>
-            </div>
+  const isArchive = currentView === 'archive';
+  const eventData = (isArchive ? eventData2025 : eventData2026) as EventData;
 
-            <div className="flex flex-wrap gap-2 justify-center">
-              <Badge variant="outline" className="text-sm">
-                {eventData.locations.length} локаций
-              </Badge>
-              <Badge variant="outline" className="text-sm">
-                {eventData.locations.reduce((total, location) => total + location.events.length, 0)} мероприятий
-              </Badge>
-            </div>
+  return (
+    <div className="min-h-screen bg-paper">
+      <OfflineIndicator />
+
+      {/* Мачтхед — по мотивам гравированной шапки афиши */}
+      <header className="border-b-3 border-double border-gold bg-paper">
+        <div className="container mx-auto px-4 pt-8 pb-6 text-center">
+          <p className="font-mono text-xs tracking-[0.35em] text-ink-muted uppercase">
+            1071 — 2026 · городу 955 лет
+          </p>
+          <h1 className="font-display text-6xl md:text-8xl leading-none text-ink mt-2">
+            Рыбинскъ
+          </h1>
+          <p className="font-display text-2xl md:text-3xl text-kinovar mt-1">
+            {isArchive ? 'День города · архив 2025' : 'город единства'}
+          </p>
+
+          <div className="mx-auto mt-4 flex max-w-xs items-center gap-3">
+            <span className="h-px flex-1 bg-gold-soft" aria-hidden="true" />
+            <svg
+              className="h-3 w-10 text-gold"
+              viewBox="0 0 60 16"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              {/* осётр с герба Рыбинска */}
+              <path d="M2 8c6-4 14-6 24-6 9 0 17 1 24 4l8-4-2 6 2 6-8-4c-7 3-15 4-24 4C16 14 8 12 2 8Zm24-4 3 4-3 4-3-4 3-4Zm10 0 3 4-3 4-3-4 3-4Z" />
+            </svg>
+            <span className="h-px flex-1 bg-gold-soft" aria-hidden="true" />
           </div>
+
+          <p className="mt-4 font-mono text-sm text-ink">
+            {isArchive ? '2 августа 2025' : '1 августа 2026, суббота'} · центр города
+          </p>
+          <p className="mt-1 text-sm text-ink-muted">
+            {eventData.locations.length} площадок · {countEvents(eventData)} событий · 0+
+          </p>
+
+          <nav className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => setCurrentView('afisha')}
+              className="border border-gold bg-transparent px-4 py-1.5 font-mono text-xs uppercase tracking-widest text-ink transition-colors hover:bg-paper-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+            >
+              Афиши
+            </button>
+            <button
+              onClick={() => setCurrentView(isArchive ? 'events' : 'archive')}
+              className="border border-gold-soft bg-transparent px-4 py-1.5 font-mono text-xs uppercase tracking-widest text-ink-muted transition-colors hover:bg-paper-deep hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+            >
+              {isArchive ? '← Программа 2026' : 'Архив 2025'}
+            </button>
+          </nav>
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          <EventList eventData={eventData} />
+        <div className="mx-auto max-w-3xl">
+          <EventList key={eventData.date} eventData={eventData} />
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t mt-16">
-        <div className="container mx-auto px-4 py-6">
-          <div className="text-center text-sm text-muted-foreground">
-            <p>© 2025 День города Рыбинск. Все мероприятия проводятся при поддержке администрации города.</p>
-            <p className="mt-2">
-              Время проведения мероприятий может изменяться. Следите за обновлениями.
-            </p>
-          </div>
+      <footer className="mt-16 border-t-3 border-double border-gold bg-ink text-paper">
+        <div className="container mx-auto px-4 py-8 text-center">
+          <p className="font-display text-2xl">Рыбинскъ</p>
+          <p className="mt-2 font-mono text-xs tracking-[0.3em] uppercase text-gold-soft">
+            Золотое кольцо России
+          </p>
+          <p className="mt-4 text-sm text-paper/70">
+            Мероприятия проводятся при поддержке администрации города.
+            Время может изменяться — следите за обновлениями.
+          </p>
+          <p className="mt-2 text-xs text-paper/50">
+            Генеральный партнёр — ПСБ · © 2026 День города Рыбинска
+          </p>
         </div>
       </footer>
     </div>

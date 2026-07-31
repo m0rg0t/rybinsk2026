@@ -147,10 +147,11 @@ export function EventList({ eventData }: EventListProps) {
         futureEventsCount={futureEventsCount}
       />
 
-      <div className="grid gap-6">
+      <div className="space-y-8">
         {filteredLocations.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>Мероприятия по выбранным критериям не найдены</p>
+          <div className="py-10 text-center text-ink-muted">
+            <p>По этим условиям ничего не идёт.</p>
+            <p className="mt-1 text-sm">Сбросьте фильтры или измените запрос — программа длится весь день.</p>
           </div>
         ) : (
           filteredLocations.map((location) => (

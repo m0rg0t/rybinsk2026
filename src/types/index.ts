@@ -15,6 +15,7 @@ export interface Location {
 export interface EventData {
   date: string;
   title: string;
+  subtitle?: string;
   locations: Location[];
 }
 
