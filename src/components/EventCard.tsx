@@ -1,10 +1,15 @@
+import { Star, CalendarPlus } from 'lucide-react';
 import { EventWithStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { getCategoryLabel } from '@/utils/categories';
+import { downloadIcs } from '@/utils/calendar';
 
 interface EventCardProps {
   event: EventWithStatus;
-  locationName?: string;
+  locationName: string;
+  showLocation?: boolean;
+  isFavorite: boolean;
+  onToggleFavorite: (eventId: string) => void;
 }
 
 // "12:00-13:00" → ["12:00", "13:00"]; "14:00, 16:00" → ["14:00", "16:00", ...]
@@ -20,10 +25,23 @@ function timeParts(time: string): { main: string; rest: string[] } {
   return { main: time, rest: [] };
 }
 
-export function EventCard({ event, locationName }: EventCardProps) {
+function minutesUntilStart(event: EventWithStatus): number | null {
+  if (event.status !== 'future') return null;
+  const diff = Math.round((event.startTime.getTime() - Date.now()) / 60000);
+  return diff > 0 && diff <= 60 ? diff : null;
+}
+
+export function EventCard({
+  event,
+  locationName,
+  showLocation = false,
+  isFavorite,
+  onToggleFavorite,
+}: EventCardProps) {
   const { main, rest } = timeParts(event.time);
   const isCurrent = event.status === 'current';
   const isPast = event.status === 'past';
+  const startsIn = minutesUntilStart(event);
 
   return (
     <article
@@ -59,20 +77,48 @@ export function EventCard({ event, locationName }: EventCardProps) {
 
       {/* Содержание */}
       <div className="pb-6">
-        <h3 className="text-base font-bold leading-snug text-ink">
-          {event.title}
-          {isCurrent && (
-            <span className="ml-2 inline-block align-middle bg-kinovar px-1.5 py-0.5 font-mono text-[0.625rem] uppercase tracking-widest text-paper">
-              Сейчас
-            </span>
-          )}
-        </h3>
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="text-base font-bold leading-snug text-ink">
+            {event.title}
+            {isCurrent && (
+              <span className="ml-2 inline-block bg-kinovar px-1.5 py-0.5 align-middle font-mono text-[0.625rem] uppercase tracking-widest text-paper dark:text-background">
+                Сейчас
+              </span>
+            )}
+            {startsIn !== null && (
+              <span className="ml-2 inline-block border border-river px-1.5 py-0.5 align-middle font-mono text-[0.625rem] uppercase tracking-widest text-river">
+                через {startsIn} мин
+              </span>
+            )}
+          </h3>
+          <span className="flex shrink-0 gap-1">
+            <button
+              onClick={() => onToggleFavorite(event.id)}
+              aria-label={isFavorite ? 'Убрать из маршрута' : 'В мой маршрут'}
+              aria-pressed={isFavorite}
+              title={isFavorite ? 'Убрать из маршрута' : 'В мой маршрут'}
+              className="p-1 text-gold transition-colors hover:text-kinovar focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+            >
+              <Star className={cn('h-4 w-4', isFavorite && 'fill-gold')} />
+            </button>
+            {!isPast && (
+              <button
+                onClick={() => downloadIcs(event, locationName)}
+                aria-label="Добавить в календарь"
+                title="Добавить в календарь"
+                className="p-1 text-gold transition-colors hover:text-kinovar focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+              >
+                <CalendarPlus className="h-4 w-4" />
+              </button>
+            )}
+          </span>
+        </div>
         {event.description && (
           <p className="mt-1 text-sm leading-relaxed text-ink-muted">{event.description}</p>
         )}
         <p className="mt-1.5 font-mono text-[0.6875rem] uppercase tracking-wider text-gold">
           {getCategoryLabel(event.category)}
-          {locationName && <span className="text-ink-muted"> · {locationName}</span>}
+          {showLocation && <span className="text-ink-muted"> · {locationName}</span>}
         </p>
       </div>
     </article>

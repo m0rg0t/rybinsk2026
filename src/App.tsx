@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Moon, Sun } from 'lucide-react';
 import { EventList } from '@/components/EventList';
 import { AfishaPage } from '@/components/AfishaPage';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
@@ -12,8 +13,24 @@ function countEvents(data: EventData): number {
   return data.locations.reduce((total, location) => total + location.events.length, 0);
 }
 
+function useTheme() {
+  const [isDark, setIsDark] = useState(() => {
+    const stored = localStorage.getItem('rybinsk-theme');
+    if (stored) return stored === 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark);
+    localStorage.setItem('rybinsk-theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
+
+  return { isDark, toggleTheme: () => setIsDark(v => !v) };
+}
+
 function App() {
   const [currentView, setCurrentView] = useState<View>('events');
+  const { isDark, toggleTheme } = useTheme();
 
   if (currentView === 'afisha') {
     return <AfishaPage onBack={() => setCurrentView('events')} />;
@@ -72,6 +89,14 @@ function App() {
               className="border border-gold-soft bg-transparent px-4 py-1.5 font-mono text-xs uppercase tracking-widest text-ink-muted transition-colors hover:bg-paper-deep hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
             >
               {isArchive ? '← Программа 2026' : 'Архив 2025'}
+            </button>
+            <button
+              onClick={toggleTheme}
+              aria-label={isDark ? 'Светлая тема' : 'Тёмная тема'}
+              title={isDark ? 'Светлая тема' : 'Тёмная тема'}
+              className="border border-gold-soft p-2 text-ink-muted transition-colors hover:bg-paper-deep hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+            >
+              {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
             </button>
           </nav>
         </div>
