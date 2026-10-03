@@ -1,4 +1,3 @@
-import { format } from 'date-fns';
 import { EventWithStatus } from '@/types';
 
 function escapeIcsText(text: string): string {
@@ -6,18 +5,18 @@ function escapeIcsText(text: string): string {
 }
 
 function icsDate(date: Date): string {
-  return format(date, "yyyyMMdd'T'HHmmss");
+  return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
 }
 
-// Плавающее локальное время: праздник привязан к городу, а не к часовому поясу устройства
-export function downloadIcs(event: EventWithStatus, locationName: string): void {
+// UTC preserves the actual Rybinsk instant when imported in any device timezone.
+export function createIcs(event: EventWithStatus, locationName: string, now = new Date()): string {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//rybinsk2026//День города Рыбинска//RU',
     'BEGIN:VEVENT',
     `UID:${event.id}@rybinsk-birthday.rybinsk-secrets.ru`,
-    `DTSTAMP:${icsDate(new Date())}`,
+    `DTSTAMP:${icsDate(now)}`,
     `DTSTART:${icsDate(event.startTime)}`,
     `DTEND:${icsDate(event.endTime)}`,
     `SUMMARY:${escapeIcsText(event.title)}`,
@@ -27,7 +26,11 @@ export function downloadIcs(event: EventWithStatus, locationName: string): void 
     'END:VCALENDAR',
   ];
 
-  const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+  return lines.join('\r\n') + '\r\n';
+}
+
+export function downloadIcs(event: EventWithStatus, locationName: string): void {
+  const blob = new Blob([createIcs(event, locationName)], { type: 'text/calendar;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;

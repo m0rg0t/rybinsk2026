@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { parseEventIntervals, getEventStatus } from './time';
+import { parseEventIntervals, getEventStatus, formatTime } from './time';
 import { Event } from '@/types';
+import currentProgramme from '@/data/events.json';
+import archiveProgramme from '@/data/events2025.json';
 
 const DATE = '2026-08-01';
 
@@ -9,7 +11,7 @@ function makeEvent(time: string): Event {
 }
 
 function at(time: string): Date {
-  return new Date(`${DATE}T${time}:00`);
+  return new Date(`${DATE}T${time}:00+03:00`);
 }
 
 describe('parseEventIntervals', () => {
@@ -57,5 +59,40 @@ describe('getEventStatus', () => {
   it('событие на весь день идёт «сейчас» в середине дня', () => {
     const event = makeEvent('10:00-18:00');
     expect(getEventStatus(event, at('14:00'), DATE)).toBe('current');
+  });
+});
+
+
+describe('city timezone', () => {
+  it('uses the same absolute instant even west of UTC', () => {
+    const [interval] = parseEventIntervals('12:00-13:30', DATE);
+    expect(interval.start.toISOString()).toBe('2026-08-01T09:00:00.000Z');
+    expect(formatTime(interval.start)).toBe('12:00');
+  });
+  it('keeps archived dates in the city timezone', () => {
+    expect(parseEventIntervals('10:00', '2025-08-02')[0].start.toISOString()).toBe('2025-08-02T07:00:00.000Z');
+  });
+  it.each(['nonsense', '25:00', '13:99'])('rejects invalid time %s', time => {
+    expect(() => parseEventIntervals(time, DATE)).toThrow(RangeError);
+  });
+});
+
+
+describe('published programme compatibility', () => {
+  it('parses every existing current and archive event without editing content', () => {
+    for (const programme of [currentProgramme, archiveProgramme]) {
+      for (const location of programme.locations) {
+        for (const event of location.events) {
+          for (const interval of parseEventIntervals(event.time, programme.date)) {
+            expect(Number.isFinite(interval.start.getTime())).toBe(true);
+            expect(interval.end.getTime()).toBeGreaterThanOrEqual(interval.start.getTime());
+          }
+        }
+      }
+    }
+  });
+  it('keeps the published all-day event active throughout the city date', () => {
+    expect(getEventStatus(makeEvent('В течение дня'), new Date('2025-08-02T15:00:00Z'), '2025-08-02')).toBe('current');
+    expect(getEventStatus(makeEvent('В течение дня'), new Date('2025-08-02T21:00:00Z'), '2025-08-02')).toBe('past');
   });
 });

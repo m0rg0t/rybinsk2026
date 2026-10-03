@@ -6,6 +6,7 @@ import { OfflineIndicator } from '@/components/OfflineIndicator';
 import eventData2026 from '@/data/events.json';
 import eventData2025 from '@/data/events2025.json';
 import { EventData } from '@/types';
+import { readStoredValue, writeStoredValue } from '@/utils/storage';
 
 type View = 'events' | 'archive' | 'afisha';
 
@@ -15,14 +16,14 @@ function countEvents(data: EventData): number {
 
 function useTheme() {
   const [isDark, setIsDark] = useState(() => {
-    const stored = localStorage.getItem('rybinsk-theme');
-    if (stored) return stored === 'dark';
+    const stored = readStoredValue('rybinsk-theme');
+    if (stored === 'dark' || stored === 'light') return stored === 'dark';
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
-    localStorage.setItem('rybinsk-theme', isDark ? 'dark' : 'light');
+    writeStoredValue('rybinsk-theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 
   return { isDark, toggleTheme: () => setIsDark(v => !v) };

@@ -1,0 +1,30 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            rybinsk-events/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: TZ=America/Los_Angeles npm test && TZ=Asia/Tokyo npm test
+      - run: npm ci && npm run lint && npm run build
+        working-directory: rybinsk-events
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
