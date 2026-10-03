@@ -23,7 +23,7 @@ function matchesQuery(event: EventWithStatus, query: string): boolean {
 }
 
 export function EventList({ eventData }: EventListProps) {
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState(() => new Date());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [statusFilter, setStatusFilter] = useState<FilterType>('all');

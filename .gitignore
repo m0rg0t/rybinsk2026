@@ -120,3 +120,5 @@ Thumbs.db
 
 # Turbo
 .turbo
+playwright-report/
+test-results/

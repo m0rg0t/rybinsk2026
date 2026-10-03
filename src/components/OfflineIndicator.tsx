@@ -3,17 +3,20 @@ import { Wifi, WifiOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export function OfflineIndicator() {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [showIndicator, setShowIndicator] = useState(false);
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+  const [showIndicator, setShowIndicator] = useState(() => !navigator.onLine);
 
   useEffect(() => {
+    let hideTimer: ReturnType<typeof setTimeout> | undefined;
     const handleOnline = () => {
+      clearTimeout(hideTimer);
       setIsOnline(true);
       setShowIndicator(true);
-      setTimeout(() => setShowIndicator(false), 3000);
+      hideTimer = setTimeout(() => setShowIndicator(false), 3000);
     };
 
     const handleOffline = () => {
+      clearTimeout(hideTimer);
       setIsOnline(false);
       setShowIndicator(true);
     };
@@ -21,11 +24,8 @@ export function OfflineIndicator() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    if (!navigator.onLine) {
-      setShowIndicator(true);
-    }
-
     return () => {
+      clearTimeout(hideTimer);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
